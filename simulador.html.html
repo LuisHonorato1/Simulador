@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de Comissão</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f3;
+      color: #1a1a18;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e0dfd8;
+      padding: 2rem;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 500;
+      color: #1a1a18;
+      margin-bottom: 1.75rem;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #888780;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 0 0 8px;
+    }
+
+    .toggle-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 1.5rem;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      padding: 10px 0;
+      border: 1px solid #d3d1c7;
+      border-radius: 8px;
+      background: #fff;
+      color: #888780;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .toggle-btn:hover { background: #f5f5f3; }
+
+    .toggle-btn.active {
+      background: #f1efe8;
+      border-color: #b4b2a9;
+      color: #1a1a18;
+      font-weight: 500;
+    }
+
+    .field-row { margin-bottom: 1.25rem; }
+
+    .field-row label {
+      display: block;
+      font-size: 13px;
+      color: #888780;
+      margin-bottom: 6px;
+    }
+
+    .field-row input[type=number] {
+      width: 100%;
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid #d3d1c7;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #1a1a18;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field-row input[type=number]:focus { border-color: #888780; }
+
+    .input-suffix { display: flex; }
+
+    .input-suffix input {
+      border-radius: 8px 0 0 8px !important;
+      flex: 1;
+    }
+
+    .input-suffix .suffix {
+      padding: 0 12px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      color: #888780;
+      background: #f1efe8;
+      border: 1px solid #d3d1c7;
+      border-left: none;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #e0dfd8;
+      margin: 1.5rem 0;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+      background: #f5f5f3;
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .metric-card .m-label {
+      font-size: 12px;
+      color: #888780;
+      margin-bottom: 4px;
+    }
+
+    .metric-card .m-value {
+      font-size: 20px;
+      font-weight: 500;
+      color: #1a1a18;
+    }
+
+    .metric-card.highlight { background: #eaf3de; }
+    .metric-card.highlight .m-value { color: #3b6d11; }
+
+    .breakdown {
+      border: 1px solid #e0dfd8;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid #e0dfd8;
+    }
+
+    .breakdown-row:last-child { border-bottom: none; }
+    .breakdown-row .b-label { color: #888780; }
+    .breakdown-row .b-val { font-weight: 500; color: #1a1a18; }
+    .breakdown-row .b-val.pos { color: #3b6d11; }
+    .breakdown-row .b-val.warn { color: #854f0b; }
+    .breakdown-row .b-label.warn { color: #854f0b; }
+    .breakdown-row.total-row { background: #f5f5f3; }
+    .breakdown-row.total-row .b-label { font-weight: 500; color: #1a1a18; }
+    .breakdown-row.total-row .b-val { font-size: 15px; }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-left: 6px;
+    }
+
+    .badge.info { background: #e6f1fb; color: #185fa5; }
+    .badge.warn { background: #faeeda; color: #854f0b; }
+    .badge.success { background: #eaf3de; color: #3b6d11; }
+
+    @media (max-width: 480px) {
+      .result-grid { grid-template-columns: 1fr; }
+      .card { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Simulador de comissão</h1>
+
+    <p class="section-label">Tipo de venda</p>
+    <div class="toggle-group" id="tipo-group">
+      <button class="toggle-btn active" onclick="setTipo('novo', this)">Seguro novo</button>
+      <button class="toggle-btn" onclick="setTipo('renovacao', this)">Renovação</button>
+    </div>
+
+    <div class="field-row">
+      <label>Valor elegível (R$)</label>
+      <input type="number" id="valor" value="10000" min="0" step="100" oninput="calc()" />
+    </div>
+
+    <div class="field-row">
+      <label>Atingimento da meta (%)</label>
+      <div class="input-suffix">
+        <input type="number" id="meta-pct" value="100" min="0" max="999" step="1" oninput="calc()" />
+        <span class="suffix">%</span>
+      </div>
+    </div>
+
+    <p class="section-label" style="margin-top: 1.5rem;">Cross sell</p>
+    <div class="toggle-group" id="cross-group">
+      <button class="toggle-btn active" onclick="setCross('nao', this)">Sem cross sell</button>
+      <button class="toggle-btn" onclick="setCross('sim', this)">Com cross sell</button>
+    </div>
+
+    <hr class="divider">
+
+    <div class="result-grid">
+      <div class="metric-card">
+        <div class="m-label">Comissão base</div>
+        <div class="m-value" id="res-base">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-label">% total aplicado</div>
+        <div class="m-value" id="res-pct">—</div>
+      </div>
+      <div class="metric-card highlight">
+        <div class="m-label">Comissão total</div>
+        <div class="m-value" id="res-total">—</div>
+      </div>
+    </div>
+
+    <div class="breakdown" id="breakdown"></div>
+  </div>
+
+  <script>
+    let tipo = 'novo';
+    let cross = 'nao';
+
+    function setTipo(val, btn) {
+      tipo = val;
+      document.querySelectorAll('#tipo-group .toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      calc();
+    }
+
+    function setCross(val, btn) {
+      cross = val;
+      document.querySelectorAll('#cross-group .toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      calc();
+    }
+
+    function fmt(v) {
+      return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function calc() {
+      const valor = parseFloat(document.getElementById('valor').value) || 0;
+      const metaPct = parseFloat(document.getElementById('meta-pct').value) || 0;
+
+      const baseRate  = tipo === 'novo' ? 0.12 : 0.048;
+      const maxRate   = tipo === 'novo' ? 0.15  : 0.06;
+      const crossRate = cross === 'sim' ? (tipo === 'novo' ? 0.03 : 0.012) : 0;
+
+      let acelerador = 0;
+      if (metaPct >= 120) acelerador = 0.02;
+      else if (metaPct >= 100) acelerador = 0.01;
+
+      const rawRate   = baseRate + crossRate + acelerador;
+      const totalRate = Math.min(rawRate, maxRate);
+      const cappedNote = rawRate > maxRate;
+
+      const comBase  = valor * baseRate;
+      const comCross = valor * crossRate;
+      const comAcel  = valor * acelerador;
+      const comTotal = valor * totalRate;
+
+      document.getElementById('res-base').textContent  = fmt(comBase);
+      document.getElementById('res-pct').textContent   = (totalRate * 100).toFixed(1) + '%';
+      document.getElementById('res-total').textContent = fmt(comTotal);
+
+      const metaLabel      = metaPct >= 120 ? 'Superação ≥120%' : metaPct >= 100 ? 'Atingimento de meta' : 'Abaixo da meta';
+      const metaBadgeClass = metaPct >= 120 ? 'success' : metaPct >= 100 ? 'info' : 'warn';
+
+      let rows = `
+        <div class="breakdown-row">
+          <span class="b-label">Comissão base (${(baseRate*100).toFixed(1)}%)</span>
+          <span class="b-val">${fmt(comBase)}</span>
+        </div>`;
+
+      if (cross === 'sim') {
+        rows += `<div class="breakdown-row">
+          <span class="b-label">Cross sell (+${(crossRate*100).toFixed(1)}%) <span class="badge info">incentivo</span></span>
+          <span class="b-val pos">+${fmt(comCross)}</span>
+        </div>`;
+      }
+
+      rows += `<div class="breakdown-row">
+        <span class="b-label">${metaLabel} (+${(acelerador*100).toFixed(1)}%) <span class="badge ${metaBadgeClass}">acelerador</span></span>
+        <span class="b-val ${acelerador > 0 ? 'pos' : ''}">${acelerador > 0 ? '+' + fmt(comAcel) : 'R$ 0,00'}</span>
+      </div>`;
+
+      if (cappedNote) {
+        rows += `<div class="breakdown-row">
+          <span class="b-label warn">Teto atingido (máx. ${(maxRate*100).toFixed(1)}%) — excedente descartado</span>
+          <span class="b-val warn">—</span>
+        </div>`;
+      }
+
+      rows += `<div class="breakdown-row total-row">
+        <span class="b-label">Total</span>
+        <span class="b-val">${fmt(comTotal)}</span>
+      </div>`;
+
+      document.getElementById('breakdown').innerHTML = rows;
+    }
+
+    calc();
+  </script>
+</body>
+</html>
