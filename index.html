@@ -167,8 +167,6 @@
     .breakdown-row .b-label { color: #888780; }
     .breakdown-row .b-val { font-weight: 500; color: #1a1a18; }
     .breakdown-row .b-val.pos { color: #3b6d11; }
-    .breakdown-row .b-val.warn { color: #854f0b; }
-    .breakdown-row .b-label.warn { color: #854f0b; }
     .breakdown-row.total-row { background: #f5f5f3; }
     .breakdown-row.total-row .b-label { font-weight: 500; color: #1a1a18; }
     .breakdown-row.total-row .b-val { font-size: 15px; }
@@ -181,8 +179,8 @@
       margin-left: 6px;
     }
 
-    .badge.info { background: #e6f1fb; color: #185fa5; }
-    .badge.warn { background: #faeeda; color: #854f0b; }
+    .badge.info    { background: #e6f1fb; color: #185fa5; }
+    .badge.warn    { background: #faeeda; color: #854f0b; }
     .badge.success { background: #eaf3de; color: #3b6d11; }
 
     @media (max-width: 480px) {
@@ -263,20 +261,17 @@
     }
 
     function calc() {
-      const valor = parseFloat(document.getElementById('valor').value) || 0;
+      const valor   = parseFloat(document.getElementById('valor').value) || 0;
       const metaPct = parseFloat(document.getElementById('meta-pct').value) || 0;
 
       const baseRate  = tipo === 'novo' ? 0.12 : 0.048;
-      const maxRate   = tipo === 'novo' ? 0.15  : 0.06;
       const crossRate = cross === 'sim' ? (tipo === 'novo' ? 0.03 : 0.012) : 0;
 
       let acelerador = 0;
       if (metaPct >= 120) acelerador = 0.02;
       else if (metaPct >= 100) acelerador = 0.01;
 
-      const rawRate   = baseRate + crossRate + acelerador;
-      const totalRate = Math.min(rawRate, maxRate);
-      const cappedNote = rawRate > maxRate;
+      const totalRate = baseRate + crossRate + acelerador;
 
       const comBase  = valor * baseRate;
       const comCross = valor * crossRate;
@@ -307,13 +302,6 @@
         <span class="b-label">${metaLabel} (+${(acelerador*100).toFixed(1)}%) <span class="badge ${metaBadgeClass}">acelerador</span></span>
         <span class="b-val ${acelerador > 0 ? 'pos' : ''}">${acelerador > 0 ? '+' + fmt(comAcel) : 'R$ 0,00'}</span>
       </div>`;
-
-      if (cappedNote) {
-        rows += `<div class="breakdown-row">
-          <span class="b-label warn">Teto atingido (máx. ${(maxRate*100).toFixed(1)}%) — excedente descartado</span>
-          <span class="b-val warn">—</span>
-        </div>`;
-      }
 
       rows += `<div class="breakdown-row total-row">
         <span class="b-label">Total</span>
