@@ -198,9 +198,9 @@
       font-weight: 400;
     }
 
-    .badge-info    { background: #e6f1fb; color: #185fa5; }
-    .badge-warn    { background: #faeeda; color: #854f0b; }
-    .badge-ok      { background: #eaf3de; color: #3b6d11; }
+    .badge-info  { background: #e6f1fb; color: #185fa5; }
+    .badge-warn  { background: #faeeda; color: #854f0b; }
+    .badge-ok    { background: #eaf3de; color: #3b6d11; }
 
     @media (max-width: 480px) {
       .metric-grid { grid-template-columns: 1fr; }
@@ -288,82 +288,83 @@
 
       const baseRate = tipo === 'novo' ? 0.12 : 0.048;
 
+      // Acelerador — sempre se aplica, independente do cross sell
       let acelerador = 0;
       if (metaPct >= 120)      acelerador = 0.02;
       else if (metaPct >= 100) acelerador = 0.01;
 
-      let totalRate;
-      let crossAddRate = 0;
+      // Cross sell: taxas fixas que substituem a base (acelerador soma por cima)
+      let crossRate  = 0;
       let crossBadge = '';
+      let crossDesc  = '';
 
-      if (cross === 'nao') {
-        totalRate = baseRate + acelerador;
-      } else if (cross === 'medio') {
-        totalRate    = tipo === 'novo' ? 0.135 : 0.054;
-        crossAddRate = totalRate - baseRate;
-        crossBadge   = 'badge-info';
-      } else {
-        totalRate    = tipo === 'novo' ? 0.15 : 0.06;
-        crossAddRate = totalRate - baseRate;
-        crossBadge   = 'badge-ok';
+      if (cross === 'medio') {
+        crossRate  = (tipo === 'novo' ? 0.135 : 0.054) - baseRate;
+        crossBadge = 'badge-info';
+        crossDesc  = tipo === 'novo'
+          ? 'Cross sell 1,10–1,19× (13,5%)'
+          : 'Cross sell 1,10–1,19× (5,4%)';
+      } else if (cross === 'alto') {
+        crossRate  = (tipo === 'novo' ? 0.15 : 0.06) - baseRate;
+        crossBadge = 'badge-ok';
+        crossDesc  = tipo === 'novo'
+          ? 'Cross sell ≥1,20× (15%)'
+          : 'Cross sell ≥1,20× (6%)';
       }
 
+      const totalRate = baseRate + crossRate + acelerador;
+
       const comBase  = valor * baseRate;
-      const comCross = cross !== 'nao' ? valor * crossAddRate : 0;
-      const comAcel  = cross === 'nao' ? valor * acelerador : 0;
+      const comCross = valor * crossRate;
+      const comAcel  = valor * acelerador;
       const comTotal = valor * totalRate;
 
       document.getElementById('res-base').textContent  = fmt(comBase);
       document.getElementById('res-pct').textContent   = (totalRate * 100).toFixed(1) + '%';
       document.getElementById('res-total').textContent = fmt(comTotal);
 
+      // Hint meta
       const acelLabel = metaPct >= 120
         ? 'Superação ≥120% (+2%)'
         : metaPct >= 100
-          ? 'Atingimento de meta (+1%)'
+          ? 'Atingimento ≥100% (+1%)'
           : 'Abaixo da meta (sem acelerador)';
       const acelBadge = metaPct >= 120 ? 'badge-ok' : metaPct >= 100 ? 'badge-info' : 'badge-warn';
       document.getElementById('hint-meta').innerHTML =
         `<span class="badge ${acelBadge}" style="margin-left:0">${acelLabel}</span>`;
 
+      // Hint cross
       if (cross === 'nao') {
         document.getElementById('hint-cross').innerHTML =
-          `<span class="badge badge-warn" style="margin-left:0">Sem cross sell — acelerador de meta aplicado normalmente</span>`;
-      } else if (cross === 'medio') {
-        const label = tipo === 'novo' ? 'Cross sell 1,10–1,19× → taxa fixa 13,5%' : 'Cross sell 1,10–1,19× → taxa fixa 5,4%';
-        document.getElementById('hint-cross').innerHTML =
-          `<span class="badge badge-info" style="margin-left:0">${label}</span>`;
+          `<span class="badge badge-warn" style="margin-left:0">Sem cross sell — apenas base + acelerador</span>`;
       } else {
-        const label = tipo === 'novo' ? 'Cross sell ≥1,20× → taxa fixa 15%' : 'Cross sell ≥1,20× → taxa fixa 6%';
         document.getElementById('hint-cross').innerHTML =
-          `<span class="badge badge-ok" style="margin-left:0">${label}</span>`;
+          `<span class="badge ${crossBadge}" style="margin-left:0">${crossDesc}</span>`;
       }
 
+      // Breakdown
       let rows = `<div class="brow">
         <span class="b-label">Comissão base (${(baseRate * 100).toFixed(1)}%)</span>
         <span class="b-val">${fmt(comBase)}</span>
       </div>`;
 
       if (cross !== 'nao') {
-        const faixaDesc = cross === 'medio'
-          ? (tipo === 'novo' ? 'Cross sell 1,10–1,19× (total fixo 13,5%)' : 'Cross sell 1,10–1,19× (total fixo 5,4%)')
-          : (tipo === 'novo' ? 'Cross sell ≥1,20× (total fixo 15%)' : 'Cross sell ≥1,20× (total fixo 6%)');
         rows += `<div class="brow">
-          <span class="b-label">${faixaDesc} <span class="badge ${crossBadge}">cross sell</span></span>
+          <span class="b-label">${crossDesc} <span class="badge ${crossBadge}">cross sell</span></span>
           <span class="b-val pos">+${fmt(comCross)}</span>
         </div>`;
-      } else {
-        const acelRowLabel = metaPct >= 120
-          ? 'Superação ≥120%'
-          : metaPct >= 100
-            ? 'Atingimento de meta'
-            : 'Abaixo da meta';
-        const acelRowBadge = metaPct >= 120 ? 'badge-ok' : metaPct >= 100 ? 'badge-info' : 'badge-warn';
-        rows += `<div class="brow">
-          <span class="b-label">${acelRowLabel} (+${(acelerador * 100).toFixed(1)}%) <span class="badge ${acelRowBadge}">acelerador</span></span>
-          <span class="b-val ${acelerador > 0 ? 'pos' : ''}">${acelerador > 0 ? '+' + fmt(comAcel) : 'R$ 0,00'}</span>
-        </div>`;
       }
+
+      const acelRowLabel = metaPct >= 120
+        ? 'Superação ≥120%'
+        : metaPct >= 100
+          ? 'Atingimento de meta'
+          : 'Abaixo da meta';
+      const acelRowBadge = metaPct >= 120 ? 'badge-ok' : metaPct >= 100 ? 'badge-info' : 'badge-warn';
+      rows += `<div class="brow">
+        <span class="b-label">${acelRowLabel} (+${(acelerador * 100).toFixed(1)}%) <span class="badge ${acelRowBadge}">acelerador</span></span>
+        <span class="b-val ${acelerador > 0 ? 'pos' : ''}">${acelerador > 0 ? '+' + fmt(comAcel) : 'R$ 0,00'}</span>
+      </div>`;
 
       rows += `<div class="brow total">
         <span class="b-label">Total</span>
